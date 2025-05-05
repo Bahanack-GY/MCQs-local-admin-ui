@@ -3,7 +3,9 @@ import { PiGraduationCapBold, PiChalkboardTeacherBold } from 'react-icons/pi'
 import Layout from '../components/Layout'
 import { useTheme } from '../context/ThemeContext'
 import '../App.css'
-
+import { useQuery } from '@tanstack/react-query'
+import { getCardData } from '../api/admin.api'
+// import { useParams } from 'react-router-dom'
 const managementData = [
   { week: 'Week1', value: 45 },
   { week: 'Week2', value: 42 },
@@ -20,10 +22,22 @@ const subjectData = [
   { subject: 'Probability', percentage: 60 },
   { subject: 'Statistics', percentage: 96 },
 ]
-
+const currentUrl: string = window.location.href; // Full current URL
+const urlSegments: string[] = currentUrl.split("/");
+const classLevel = urlSegments[urlSegments.length - 1];
+const classLevelNumber = classLevel.replace('%20', ' ');
 function AdminHome() {
   const { darkMode } = useTheme();
 
+  const { data: cardData, isLoading } = useQuery({
+    queryKey: ['cardData'],
+    queryFn: () => getCardData(classLevel),
+    staleTime: 5000,
+    
+  })
+ if(isLoading){
+  return <div>...</div>
+ }
   return (
     <Layout>
       <div className="p-4 sm:p-6 lg:p-8">
@@ -32,7 +46,7 @@ function AdminHome() {
             <h1 className={`text-xl sm:text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
               Dashboard
             </h1>
-            <p className="text-sm sm:text-base text-gray-400">Form 1</p>
+            <p className="text-sm sm:text-base text-gray-400">{classLevelNumber}</p>
           </div>
         </div>
 
@@ -41,7 +55,7 @@ function AdminHome() {
           <div className="bg-blue-600 rounded-xl p-4 sm:p-6 text-white">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="text-2xl sm:text-4xl font-bold mb-1 sm:mb-2">1256</h3>
+                <h3 className="text-2xl sm:text-4xl font-bold mb-1 sm:mb-2">{cardData?.totalStudents}</h3>
                 <p className="text-sm sm:text-base">Students</p>
               </div>
               <PiGraduationCapBold className="text-3xl sm:text-4xl opacity-80" />
@@ -50,7 +64,7 @@ function AdminHome() {
           <div className="bg-blue-500 rounded-xl p-4 sm:p-6 text-white">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="text-2xl sm:text-4xl font-bold mb-1 sm:mb-2">80%</h3>
+                <h3 className="text-2xl sm:text-4xl font-bold mb-1 sm:mb-2">{cardData?.highestScore} %</h3>
                 <p className="text-sm sm:text-base">Highest score</p>
               </div>
               <PiChalkboardTeacherBold className="text-3xl sm:text-4xl opacity-80" />
@@ -59,7 +73,7 @@ function AdminHome() {
           <div className="bg-blue-400 rounded-xl p-4 sm:p-6 text-white sm:col-span-2 lg:col-span-1">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="text-2xl sm:text-4xl font-bold mb-1 sm:mb-2">45%</h3>
+                <h3 className="text-2xl sm:text-4xl font-bold mb-1 sm:mb-2">{cardData?.lowestScore} %</h3>
                 <p className="text-sm sm:text-base">Lowest score</p>
               </div>
               <PiChalkboardTeacherBold className="text-3xl sm:text-4xl opacity-80" />

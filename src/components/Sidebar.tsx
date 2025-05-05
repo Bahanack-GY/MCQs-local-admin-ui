@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { FiHome, FiUsers, FiBook, FiCalendar, FiSettings } from 'react-icons/fi'
 import { BsBookHalf, BsPencilSquare } from 'react-icons/bs'
 import { IconType } from 'react-icons'
@@ -18,7 +18,7 @@ interface SidebarProps {
 }
 
 const defaultNavItems: NavigationItem[] = [
-  { path: '/', icon: FiHome, label: 'Dashboard' },
+  { path: '/home', icon: FiHome, label: 'Dashboard' },
   { path: '/students', icon: FiUsers, label: 'Student' },
   { path: '/create-exam', icon: BsPencilSquare, label: 'Create Exam' },
   { path: '/courses', icon: FiBook, label: 'Courses' },
@@ -29,7 +29,8 @@ const defaultNavItems: NavigationItem[] = [
 
 function Sidebar({ navigation = defaultNavItems, isOpen = false, onClose }: SidebarProps) {
   const location = useLocation()
-  const { darkMode } = useTheme();
+  const { darkMode } = useTheme()
+  const { class: selectedClass } = useParams()
 
   return (
     <div 
@@ -55,12 +56,15 @@ function Sidebar({ navigation = defaultNavItems, isOpen = false, onClose }: Side
         <nav className="flex-1 space-y-1 px-2 pb-4 overflow-y-auto">
           {navigation.map((item) => {
             const Icon = item.icon
-            const isActive = location.pathname === item.path
+            const path = item.path === '/home' && selectedClass 
+              ? `${item.path}/${selectedClass}` 
+              : item.path
+            const isActive = location.pathname === path
             
             return (
               <Link
                 key={item.path}
-                to={item.path}
+                to={path}
                 onClick={onClose}
                 className={`
                   flex items-center gap-x-3 px-3 py-2 rounded-lg transition-all duration-200 relative

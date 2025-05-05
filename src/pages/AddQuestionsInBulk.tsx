@@ -3,6 +3,17 @@ import { useTheme } from '../context/ThemeContext'
 import Layout from '../components/Layout'
 import { FiUpload, FiEdit2, FiCheck, FiDownload } from 'react-icons/fi'
 import mammoth from 'mammoth'
+import { useMutation } from '@tanstack/react-query'
+import { addQuestions } from '../api/admin.api'
+
+interface Question {
+  question: string
+  options: string[]
+  answer: number
+  topic: string
+  subject: string
+  level: string
+}
 
 interface ParsedQuestion {
   question: string
@@ -30,6 +41,19 @@ function AddQuestionsInBulk() {
   const [level, setLevel] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
+  const uploadQuestionsMutation = useMutation({
+    mutationFn: (questions: Question[]) => addQuestions({ questions }),
+    onSuccess: (data) => {
+      setSuccess(data.message || 'Questions uploaded successfully!')
+      setParsedQuestions([])
+      setSubject('')
+      setLevel('')
+    },
+    onError: (error: Error) => {
+      setError(`Failed to upload questions: ${error.message}`)
+    }
+  })
+
   const parseFileContent = async (text: string) => {
     try {
       const questions: EditingQuestion[] = []
@@ -44,7 +68,7 @@ function AddQuestionsInBulk() {
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i]
         
-        // Check for numbered question start (e.g., "1.", "2.", etc.)
+        // Check for numbered question start 
         const questionMatch = line.match(/^\d+\.\s*(.+)/)
         if (questionMatch) {
           // Save previous question if it exists
@@ -255,17 +279,21 @@ function AddQuestionsInBulk() {
     }
 
     try {
-      // Here you would make the API call to your backend
-      console.log('Submitting questions:', parsedQuestions)
-      setSuccess('Questions submitted successfully!')
-      
-      // Reset form
-      setParsedQuestions([])
-      setSubject('')
-      setLevel('')
+      // Transform the questions to match the expected format
+      const questionsToUpload: Question[] = parsedQuestions.map(q => ({
+        question: q.question,
+        options: q.options,
+        answer: q.answer,
+        level: q.level[0],
+        subject: q.subject,
+        topic: q.topic
+      }))
+
+      // Use the mutation to upload questions
+      uploadQuestionsMutation.mutate(questionsToUpload)
     } catch (error) {
       console.error(error)
-      setError('Failed to submit questions')
+      setError('Failed to prepare questions for upload')
     }
   }
 

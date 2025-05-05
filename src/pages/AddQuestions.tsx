@@ -3,6 +3,9 @@ import { useTheme } from '../context/ThemeContext'
 import Layout from '../components/Layout'
 import { IoAdd, IoClose } from 'react-icons/io5'
 import { BsInfoCircle } from 'react-icons/bs'
+import { useMutation } from '@tanstack/react-query'
+import { addAQuestion } from '../api/admin.api'
+import { saveImage } from '../api/image.api'
 
 interface QuestionForm {
   question: string
@@ -10,7 +13,7 @@ interface QuestionForm {
   answer: string
   topic: string
   subject: string
-  image?: File | null
+  image?: string | null
   level: string
 }
 
@@ -33,7 +36,42 @@ function AddQuestions() {
   const [error, setError] = useState<string>('')
   const [success, setSuccess] = useState<string>('')
   const [imagePreview, setImagePreview] = useState<string>('')
+  const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const uploadImageMutation = useMutation({
+    mutationFn: saveImage,
+    onSuccess: (data) => {
+      setFormData(prev => ({ ...prev, image: data.path }))
+    },
+    onError: (error: Error) => {
+      setError(`Failed to process image: ${error.message}`)
+      setImagePreview('')
+    }
+  })
+
+  const addQuestionMutation = useMutation({
+    mutationFn: (question: QuestionForm) => addAQuestion({
+      question: question.question,
+      options: question.options,
+      answer: parseInt(question.answer),
+      topic: question.topic,
+      subject: question.subject,
+      level: question.level,
+      image: question.image || undefined
+    }),
+    onSuccess: () => {
+      setSuccess('Question added successfully!')
+      setFormData(initialForm)
+      setImagePreview('')
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    },
+    onError: (error: Error) => {
+      setError(`Failed to add question: ${error.message}`)
+    }
+  })
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -53,7 +91,7 @@ function AddQuestions() {
     }))
   }
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       if (file.size > 5 * 1024 * 1024) { // 5MB limit
@@ -64,10 +102,24 @@ function AddQuestions() {
         setError('Please upload an image file')
         return
       }
-      setFormData(prev => ({ ...prev, image: file }))
-      // Create preview URL
-      const previewUrl = URL.createObjectURL(file)
-      setImagePreview(previewUrl)
+
+      setIsUploading(true)
+      setError('')
+
+      try {
+        // Create preview URL
+        const previewUrl = URL.createObjectURL(file)
+        setImagePreview(previewUrl)
+
+        // Process the image
+        await uploadImageMutation.mutateAsync(file)
+      } catch (error) {
+        console.error('Error handling image:', error)
+        setError('Failed to process image')
+        setImagePreview('')
+      } finally {
+        setIsUploading(false)
+      }
     }
   }
 
@@ -125,22 +177,8 @@ function AddQuestions() {
       return
     }
 
-    // Here you would typically make an API call to your backend
-    console.log('Form submitted:', {
-      ...formData,
-      image: formData.image ? formData.image.name : null
-    })
-    setSuccess('Question added successfully!')
-    setFormData(initialForm)
-    setImagePreview('')
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
-    
-    // Clear success message after 3 seconds
-    setTimeout(() => {
-      setSuccess('')
-    }, 3000)
+    // Use the mutation to add the question
+    addQuestionMutation.mutate(formData)
   }
 
   return (
@@ -321,17 +359,21 @@ function AddQuestions() {
                 accept="image/*"
                 onChange={handleImageChange}
                 className="hidden"
+                disabled={isUploading}
               />
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
                 className={`w-full p-4 border-2 border-dashed rounded-lg text-center ${
                   darkMode
                     ? 'border-gray-600 hover:border-gray-500'
                     : 'border-gray-300 hover:border-gray-400'
-                }`}
+                } ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                <span className="text-gray-400">Click to upload image (max 5MB)</span>
+                <span className="text-gray-400">
+                  {isUploading ? 'Uploading...' : 'Click to upload image (max 5MB)'}
+                </span>
               </button>
               {imagePreview && (
                 <div className="relative">
