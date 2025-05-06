@@ -28,7 +28,7 @@ const initialForm: QuestionForm = {
 }
 
 const subjects = ['Mathematics', 'English', 'Physics', 'Chemistry', 'Biology']
-const levels = ['Form 1', 'Form 2', 'Form 3', 'Form 4']
+const levels = ["Form 1", "Form 2", "Form 3", "Form 4", "Form 5A","Form 5Sc", "LSA", "LSS", "USA", "USS"]
 
 function AddQuestions() {
   const { darkMode } = useTheme()

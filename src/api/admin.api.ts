@@ -16,7 +16,7 @@ interface BulkQuestionsResponse {
 }
 
 const api =axios.create({
-    baseURL:"http://localhost:3030/api/v1",
+    baseURL:"http://192.168.16.105:3030/api/v1",
     headers:{
         "Content-Type":"application/json",
         "Accept":"application/json"
@@ -84,3 +84,29 @@ export const uploadImage = async (file: File): Promise<{ url: string }> => {
         throw error
     }
 }
+
+export const createExam = async (data: { title: string, subject: string, level: string, duration: number, questions: string[] }) => {
+    try {
+        const response = await api.post('/exams', data)
+        console.log("Exam created:", response.data)
+        return response.data    
+    }catch(error){
+        console.error("Error creating exam:",error)
+        throw error
+    }
+}
+
+export const getQuestions = async () => {
+    try{
+        const response = await api.get("/questions")
+        console.log("Questions:",response.data)
+        return response.data
+    }catch(error){
+        console.error("Error fetching questions:",error)
+        throw error
+    }
+}
+
+
+
+

@@ -3,48 +3,28 @@ import { FiClock, FiBookOpen } from 'react-icons/fi'
 import { BsCardChecklist } from 'react-icons/bs'
 import Layout from '../components/Layout'
 import '../App.css'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { createExam, getQuestions } from '../api/admin.api'
 
-// Mock data for questions bank with topics
-const questionsBank = [
-  { 
-    id: 1, 
-    question: "What is the capital of France?", 
-    subject: "Geography", 
-    level: "Form 1",
-    topic: "European Countries"
-  },
-  { 
-    id: 2, 
-    question: "What is photosynthesis?", 
-    subject: "Biology", 
-    level: "Form 1",
-    topic: "Plant Processes"
-  },
-  { 
-    id: 3, 
-    question: "Solve for x: 2x + 5 = 13", 
-    subject: "Mathematics", 
-    level: "Form 1",
-    topic: "Linear Equations"
-  },
-  { 
-    id: 4, 
-    question: "What is the past tense of 'run'?", 
-    subject: "English", 
-    level: "Form 1",
-    topic: "Verb Tenses"
-  },
-  { 
-    id: 5, 
-    question: "What is Newton's first law?", 
-    subject: "Physics", 
-    level: "Form 1",
-    topic: "Newton's Laws"
-  },
-];
 
 const subjects = ["Mathematics", "English", "Physics", "Biology", "Geography"];
-const levels = ["Form 1", "Form 2", "Form 3", "Form 4"];
+const levels = ["Form 1", "Form 2", "Form 3", "Form 4", "Form 5A","Form 5Sc", "LSA", "LSS", "USA", "USS"];
+
+interface Question {
+  _id: string;
+  question: string;
+  subject: string;
+  level: string[];
+  topic: string;
+}
+
+interface ExamPayload {
+  title: string;
+  subject: string;
+  level: string;
+  questions: string[];
+  duration: number;
+}
 
 function CreateExam() {
   const [title, setTitle] = useState("")
@@ -52,61 +32,79 @@ function CreateExam() {
   const [level, setLevel] = useState("")
   const [topic, setTopic] = useState("")
   const [duration, setDuration] = useState("")
-  const [selectedQuestions, setSelectedQuestions] = useState<number[]>([])
+  const [selectedQuestions, setSelectedQuestions] = useState<string[]>([])
   const [availableTopics, setAvailableTopics] = useState<string[]>([])
-  const [filteredQuestions, setFilteredQuestions] = useState(questionsBank)
+  const [filteredQuestions, setFilteredQuestions] = useState<Question[]>([])
+  const [successMessage, setSuccessMessage] = useState<string>("")
+
+  // Fetch questions from backend
+  const { data: questionsBank = [], isLoading: isQuestionsLoading } = useQuery<Question[]>({
+    queryKey: ['questionsBank'],
+    queryFn: getQuestions
+  })
 
   // Update available topics when subject or level changes
   useEffect(() => {
     if (subject && level) {
       const topics = [...new Set(
         questionsBank
-          .filter(q => q.subject === subject && q.level === level)
-          .map(q => q.topic)
+          .filter((q) => q.subject === subject && q.level && q.level.includes(level))
+          .map((q) => q.topic)
       )]
       setAvailableTopics(topics)
     } else {
       setAvailableTopics([])
     }
     setTopic("") // Reset topic when subject or level changes
-  }, [subject, level])
+  }, [subject, level, questionsBank])
 
   // Filter questions based on selection
   useEffect(() => {
     let filtered = questionsBank
-    
     if (subject) {
-      filtered = filtered.filter(q => q.subject === subject)
+      filtered = filtered.filter((q) => q.subject === subject)
     }
     if (level) {
-      filtered = filtered.filter(q => q.level === level)
+      filtered = filtered.filter((q) => q.level && q.level.includes(level))
     }
     if (topic) {
-      filtered = filtered.filter(q => q.topic === topic)
+      filtered = filtered.filter((q) => q.topic === topic)
     }
-    
     setFilteredQuestions(filtered)
-  }, [subject, level, topic])
+  }, [subject, level, topic, questionsBank])
 
-  const handleQuestionToggle = (questionId: number) => {
-    setSelectedQuestions(prev => 
+  const handleQuestionToggle = (questionId: string) => {
+    setSelectedQuestions(prev =>
       prev.includes(questionId)
         ? prev.filter(id => id !== questionId)
         : [...prev, questionId]
     )
   }
 
+  // useMutation for creating exam
+  const createExamMutation = useMutation({
+    mutationFn: async (examData: ExamPayload) => createExam(examData),
+    onSuccess: () => {
+      setSuccessMessage('Exam created successfully!')
+      // Optionally reset form or redirect
+    },
+    onError: (error) => {
+      setSuccessMessage('Error creating exam')
+      console.error(error)
+    }
+  })
+
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log({
+    e.preventDefault();
+    setSuccessMessage("")
+    createExamMutation.mutate({
       title,
       subject,
       level,
-      topic,
       questions: selectedQuestions,
       duration: parseInt(duration)
-    })
-  }
+    });
+  };
 
   return (
     <Layout>
@@ -117,6 +115,13 @@ function CreateExam() {
             <p className="text-gray-400">Form 1</p>
           </div>
         </div>
+
+        {/* Success Message UI */}
+        {successMessage && (
+          <div className={`mb-6 p-4 rounded-lg text-center font-semibold ${successMessage.includes('success') ? 'bg-green-100 text-green-700 border border-green-400' : 'bg-red-100 text-red-700 border border-red-400'}`}>
+            {successMessage}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Info Cards */}
@@ -223,37 +228,40 @@ function CreateExam() {
                 {selectedQuestions.length} questions selected
               </div>
             </div>
-            
             <div className="space-y-4">
-              {filteredQuestions.map((question) => (
-                <div
-                  key={question.id}
-                  className={`p-4 rounded-lg border ${
-                    selectedQuestions.includes(question.id)
-                      ? 'border-blue-500 bg-blue-500/10'
-                      : 'border-gray-700'
-                  }`}
-                >
-                  <div className="flex items-start">
-                    <input
-                      type="checkbox"
-                      checked={selectedQuestions.includes(question.id)}
-                      onChange={() => handleQuestionToggle(question.id)}
-                      className="mt-1 mr-3"
-                    />
-                    <div>
-                      <p className="text-white mb-2">{question.question}</p>
-                      <div className="flex space-x-2">
-                        <span className="text-sm text-blue-400">{question.subject}</span>
-                        <span className="text-sm text-gray-500">•</span>
-                        <span className="text-sm text-gray-400">{question.level}</span>
-                        <span className="text-sm text-gray-500">•</span>
-                        <span className="text-sm text-blue-400">{question.topic}</span>
+              {isQuestionsLoading ? (
+                <div className="text-white">Loading questions...</div>
+              ) : (
+                filteredQuestions.map((question) => (
+                  <div
+                    key={question._id}
+                    className={`p-4 rounded-lg border ${
+                      selectedQuestions.includes(question._id)
+                        ? 'border-blue-500 bg-blue-500/10'
+                        : 'border-gray-700'
+                    }`}
+                  >
+                    <div className="flex items-start">
+                      <input
+                        type="checkbox"
+                        checked={selectedQuestions.includes(question._id)}
+                        onChange={() => handleQuestionToggle(question._id)}
+                        className="mt-1 mr-3"
+                      />
+                      <div>
+                        <p className="text-white mb-2">{question.question}</p>
+                        <div className="flex space-x-2">
+                          <span className="text-sm text-blue-400">{question.subject}</span>
+                          <span className="text-sm text-gray-500">•</span>
+                          <span className="text-sm text-gray-400">{question.level.join(', ')}</span>
+                          <span className="text-sm text-gray-500">•</span>
+                          <span className="text-sm text-blue-400">{question.topic}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
@@ -262,8 +270,9 @@ function CreateExam() {
             <button
               type="submit"
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              disabled={createExamMutation.isPending}
             >
-              Create Exam
+              {createExamMutation.isPending ? 'Creating...' : 'Create Exam'}
             </button>
           </div>
         </form>

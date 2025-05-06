@@ -4,10 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { PiChalkboardTeacher } from 'react-icons/pi'
 
 const classes = [
-  "Form 1",
-  "Form 2",
-  "Form 3",
-  "Form 4"
+ "Form 1", "Form 2", "Form 3", "Form 4", "Form 5A","Form 5Sc", "LSA", "LSS", "USA", "USS"
 ]
 
 function Login() {
