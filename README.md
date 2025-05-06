@@ -1,4 +1,4 @@
-# School Management Dashboard
+# School Management Dashboard (SSIC)
 
 A modern and responsive school management dashboard built with React, TypeScript, and Tailwind CSS.
 
