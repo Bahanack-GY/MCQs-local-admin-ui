@@ -36,6 +36,7 @@ export const getCardData = async (level:string) => {
 
 export const getStudents = async (level:string) => {
     try{
+        
         const response = await api.get(`/admin/students/${level}`)
         console.log("level:",level)
         return response.data

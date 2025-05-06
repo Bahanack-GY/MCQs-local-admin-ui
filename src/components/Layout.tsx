@@ -10,12 +10,14 @@ interface LayoutProps {
   children: ReactNode
 }
 
+const selectedClass = localStorage.getItem('selectedClass');
+
 const navigation = [
   { path: '/', icon: HomeIcon as unknown as IconType, label: 'Dashboard' },
   { path: '/create-exam', icon: PlusCircleIcon as unknown as IconType, label: 'Create Exam' },
   { path: '/add-question', icon: QuestionMarkCircleIcon as unknown as IconType, label: 'Add Question' },
   { path: '/add-questions-bulk', icon: DocumentPlusIcon as unknown as IconType, label: 'Bulk Upload' },
-  { path: '/students', icon: UsersIcon as unknown as IconType, label: 'Students' },
+  { path: selectedClass ? `/students/${selectedClass}` : '/students/', icon: UsersIcon as unknown as IconType, label: 'Students' },
 ]
 
 function Layout({ children }: LayoutProps) {

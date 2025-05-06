@@ -15,6 +15,8 @@ function Login() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
     if (selectedClass) {
+      // Store selected class in localStorage
+      localStorage.setItem('selectedClass', selectedClass)
       // Navigate to home page with the selected class
       navigate(`/home/${selectedClass}`)
     }

@@ -55,8 +55,12 @@ function CreateExam() {
     } else {
       setAvailableTopics([])
     }
-    setTopic("") // Reset topic when subject or level changes
   }, [subject, level, questionsBank])
+
+  // Reset topic only when subject or level changes
+  useEffect(() => {
+    setTopic("");
+  }, [subject, level]);
 
   // Filter questions based on selection
   useEffect(() => {
